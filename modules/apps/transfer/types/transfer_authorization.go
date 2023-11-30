@@ -165,8 +165,8 @@ func areAllowedPacketDataKeys(ctx sdk.Context, memo string, allowedPacketDataLis
 		return len(strings.TrimSpace(memo)) == 0, nil
 	}
 
-	// if allowedPacketData have only 1 elements and it equal AllowAllPacketDataKeys
-	// then accept all the packet
+	// if allowedPacketDataList has only 1 element and it equals AllowAllPacketDataKeys
+	// then accept all the packet data keys
 	if len(allowedPacketDataList) == 1 && allowedPacketDataList[0] == AllowAllPacketDataKeys {
 		return true, nil
 	}
