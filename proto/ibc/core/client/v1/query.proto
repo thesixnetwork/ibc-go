@@ -66,10 +66,10 @@ service Query {
   // VerifyMembershipProof queries an IBC light client to verify a proof of a commitment
   rpc VerifyMembershipProof(QueryVerifyMembershipProofRequest) returns (QueryVerifyMembershipProofResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http) = {
-            post: "/ibc/core/client/v1/verify_membership_proof"
-            body: "*"
-        };
+    option (google.api.http)                   = {
+      post: "/ibc/core/client/v1/verify_membership_proof"
+      body: "*"
+    };
   }
 }
 
@@ -219,11 +219,11 @@ message QueryUpgradedConsensusStateResponse {
 
 // QueryVerifyMembershipProofRequest is the request type for the Query/VerifyMembershipProof RPC method
 message QueryVerifyMembershipProofRequest {
-  string client_id = 1;
-  bytes proof = 2;
-  ibc.core.commitment.v1.MerklePath merkle_path = 3;
-  ibc.core.client.v1.Height proof_height = 4;
-  bytes value = 5;
+  string                            client_id    = 1;
+  bytes                             proof        = 2;
+  ibc.core.commitment.v1.MerklePath merkle_path  = 3;
+  ibc.core.client.v1.Height         proof_height = 4;
+  bytes                             value        = 5;
   // optional time delay
   uint64 time_delay = 6;
   // optional block delay
