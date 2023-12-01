@@ -23,6 +23,59 @@ import (
 
 var _ types.QueryServer = (*Keeper)(nil)
 
+// VerifyMembershipProof implements the Query/VerifyMembershipProof gRPC method
+func (k Keeper) VerifyMembershipProof(c context.Context, req *types.QueryVerifyMembershipProofRequest) (*types.QueryVerifyMembershipProofResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if err := host.ClientIdentifierValidator(req.ClientId); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if req.MerklePath == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty merkle path")
+	}
+
+	if req.Proof == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty proof")
+	}
+
+	if req.ProofHeight == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty proof height")
+	}
+
+	if req.Value == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty value")
+	}
+
+	ctx := sdk.UnwrapSDKContext(c)
+	// cache the context to ensure clientState.VerifyMembership does not change state
+	cachedCtx, _ := ctx.CacheContext()
+
+	// make sure we charge the higher level context even on panic
+	defer func() {
+		ctx.GasMeter().ConsumeGas(cachedCtx.GasMeter().GasConsumed(), "verify membership query")
+	}()
+
+	clientState, found := k.GetClientState(cachedCtx, req.ClientId)
+	if !found {
+		return nil, status.Error(
+			codes.NotFound,
+			errorsmod.Wrap(types.ErrClientNotFound, req.ClientId).Error(),
+		)
+	}
+
+	result := true
+	if err := clientState.VerifyMembership(ctx, k.ClientStore(cachedCtx, req.ClientId), k.cdc, req.ProofHeight, req.TimeDelay, req.BlockDelay, req.Proof, req.MerklePath, req.Value); err != nil {
+		result = false
+	}
+
+	return &types.QueryVerifyMembershipProofResponse{
+		Result: result,
+	}, nil
+}
+
 // ClientState implements the Query/ClientState gRPC method
 func (k Keeper) ClientState(c context.Context, req *types.QueryClientStateRequest) (*types.QueryClientStateResponse, error) {
 	if req == nil {
