@@ -12,7 +12,10 @@ import (
 var (
 	vm WasmEngine
 
-	querier wasmvm.Querier
+	queryRouter QueryRouter
+	querier     wasmvm.Querier
+
+	VMGasRegister = NewDefaultWasmGasRegister()
 
 	// state management
 	Schema    collections.Schema
@@ -39,16 +42,21 @@ func GetVM() WasmEngine {
 // SetQuerier sets the custom wasm query handle for the 08-wasm module.
 // If wasmQuerier is nil a default querier is used that return always an error for any query.
 func SetQuerier(wasmQuerier wasmvm.Querier) {
-	if wasmQuerier == nil {
-		querier = &defaultQuerier{}
-	} else {
-		querier = wasmQuerier
-	}
+	querier = wasmQuerier
 }
 
-// GetQuerier returns the custom wasm query handler for the 08-wasm module.
-func GetQuerier() wasmvm.Querier {
-	return querier
+// SetQueryRouter sets the query router for the 08-wasm module.
+// It panics if the query router is nil.
+func SetQueryRouter(router QueryRouter) {
+	if router == nil {
+		panic(errors.New("query router must be not nil"))
+	}
+	queryRouter = router
+}
+
+// GetQueryRouter returns the query router for the 08-wasm module.
+func GetQueryRouter() QueryRouter {
+	return queryRouter
 }
 
 // SetupWasmStoreService sets up the 08-wasm module's collections.
