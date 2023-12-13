@@ -24,8 +24,8 @@ corresponding hard-fork event.
 Currently in ibc-go light clients are defined as part of the codebase and are implemented as modules under
 `modules/light-clients`. Adding support for new light clients or updating an existing light client in the event
 of a security issue or consensus update is a multi-step process which is both time consuming and error prone. 
-In order to enable new IBC light client implementations it is necessary to modify the codebase of ibc-go, 
-re-build chains' binaries, pass a governance proposal and validators upgrade their nodes.
+In order to enable new IBC light client implementations it is necessary to modify the codebase of ibc-go (if the light
+client is part of its codebase), re-build chains' binaries, pass a governance proposal and validators upgrade their nodes.
 
 Another problem stemming from the above process is that if a chain wants to upgrade its own consensus, it will 
 need to convince every chain or hub connected to it to upgrade its light client in order to stay connected. Due 
@@ -55,7 +55,7 @@ clientKeeper.SetParams(ctx, params)
 
 Adding a new light client contract is governance-gated. To upload a new light client users need to submit 
 a [governance v1 proposal](https://docs.cosmos.network/main/modules/gov#proposals) that contains the `sdk.Msg` for storing 
-the Wasm contract's bytecode. The required message is `MsgStoreCode` and the bytecode is provided in the field `code`:
+the Wasm contract's bytecode. The required message is `MsgStoreCode` and the bytecode is provided in the field `wasm_byte_code`:
 
 ```proto
 // MsgStoreCode defines the request type for the StoreCode rpc.
@@ -145,24 +145,14 @@ func (cs ClientState) VerifyClientMessage(
 }
 ```
 
-### Shared Wasm VM with `x/wasm`
-
-// TODO
-
-
 ### Global Wasm VM variable
 
-The `08-wasm` keeper structure keeps a reference to the Wasm VM instantiated in the keeper constructor function. The keeper uses 
-the Wasm VM to store the bytecode of light client contracts. However, the Wasm VM is also needed in the `08-wasm` implementations of
+The 08-wasm keeper structure keeps a reference to the Wasm VM instantiated in the keeper constructor function. The keeper uses 
+the Wasm VM to store the bytecode of light client contracts. However, the Wasm VM is also needed in the 08-wasm implementations of
 some of the `ClientState` interface functions to initialise a contract, execute calls on the contract and query the contract. Since
-the `ClientState` functions do not have access to the `08-wasm` keeper, then it has been decided to keep a global pointer variable that
-points to the same instance as the one in the `08-wasm` keeper. This global pointer variable is then used in the implementations of
+the `ClientState` functions do not have access to the 08-wasm keeper, then it has been decided to keep a global pointer variable that
+points to the same instance as the one in the 08-wasm keeper. This global pointer variable is then used in the implementations of
 the `ClientState` functions. 
-
-
-### Global Wasm store key variable 
-
-// TODO
 
 ## Consequences
 
