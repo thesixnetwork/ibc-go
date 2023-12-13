@@ -4,15 +4,16 @@
 
 - 26/11/2020: Initial Draft
 - 26/05/2023: Update after 02-client refactor and re-implementation by Strangelove
+- 13/12/2023: Update after upstreaming of module to ibc-go
 
 ## Status
 
-*Draft, needs updates*
+*Accepted and applied in v0.1.0 of 08-wasm*
 
 ## Abstract
 
 In the Cosmos SDK light clients are current hardcoded in Go. This makes upgrading existing IBC light clients or
-adding support for new light client a multi step process involving on-chain governance which is time-consuming.
+adding support for new light clients a multi step process involving on-chain governance which is time-consuming.
 
 To remedy this, we are proposing a Wasm VM to host light client bytecode, which allows easier upgrading of
 existing IBC light clients as well as adding support for new IBC light clients without requiring a code release and 
@@ -59,8 +60,10 @@ the Wasm contract's bytecode. The required message is `MsgStoreCode` and the byt
 ```proto
 // MsgStoreCode defines the request type for the StoreCode rpc.
 message MsgStoreCode {
+  // signer address
   string signer = 1;
-  bytes  wasm_byte_code = 2;
+  // wasm byte code of light client contract. It can be raw or gzip compressed
+  bytes wasm_byte_code = 2;
 }
 ```
 
@@ -71,27 +74,27 @@ submit this message (which is normally the address of the governance module).
 // StoreCode defines a rpc handler method for MsgStoreCode
 func (k Keeper) StoreCode(goCtx context.Context, msg *types.MsgStoreCode) (*types.MsgStoreCodeResponse, error) {
   if k.GetAuthority() != msg.Signer {
-    return nil, errorsmod.Wrapf(ibcerrors.ErrUnauthorized, "expected %s, got %s", m.GetAuthority(), msg.Signer)
+    return nil, errorsmod.Wrapf(ibcerrors.ErrUnauthorized, "expected %s, got %s", k.GetAuthority(), msg.Signer)
   }
 
   ctx := sdk.UnwrapSDKContext(goCtx)
-  codeHash, err := k.storeWasmCode(ctx, msg.WasmByteCode)
+  checksum, err := k.storeWasmCode(ctx, msg.WasmByteCode, ibcwasm.GetVM().StoreCode)
   if err != nil {
     return nil, errorsmod.Wrap(err, "failed to store wasm bytecode")
   }
 
-  emitStoreWasmCodeEvent(ctx, codeHash)
+  emitStoreWasmCodeEvent(ctx, checksum)
 
   return &types.MsgStoreCodeResponse{
-    Checksum: codeHash,
+    Checksum: checksum,
   }, nil
 }
 ```
 
-The contract's bytecode is not stored in state (it is actually unnecessary and wasteful to do store it, since
-the Wasm VM already stores it and can be queried back, if needed). The code hash is simply the hash of the bytecode
-of the contract and it is stored in state in an entrey with key `codeHashes` that contains a list of the code hashes
-of contracts that have been stored.
+The contract's bytecode is not stored in state (it is actually unnecessary and wasteful to store it, since
+the Wasm VM already stores it and can be queried back, if needed). The checksum is simply the hash of the bytecode
+of the contract and it is stored in state in an entry with key `checksums` that contains a list of the checksums
+of bytecodes that have been stored.
 
 ### How light client proxy works?
 
@@ -100,18 +103,16 @@ in JSON format with appropriate environment information. Data returned by the sm
 returned to the caller.
 
 Consider the example of the `VerifyClientMessage` function of `ClientState` interface. Incoming arguments are
-packaged inside a payload object that is then JSON serialized and passed to `callContract`, which executes `WasmVm.Execute` 
+packaged inside a payload object that is then JSON serialized and passed to `queryContract`, which executes `WasmVm.Query` 
 and returns the slice of bytes returned by the smart contract. This data is deserialized and passed as return argument.
 
 ```go
-type queryMsg struct {
-	Status               *statusMsg               `json:"status,omitempty"`
-	ExportMetadata       *exportMetadataMsg       `json:"export_metadata,omitempty"`
-	TimestampAtHeight    *timestampAtHeightMsg    `json:"timestamp_at_height,omitempty"`
-	VerifyClientMessage  *verifyClientMessageMsg  `json:"verify_client_message,omitempty"`
-	VerifyMembership     *verifyMembershipMsg     `json:"verify_membership,omitempty"`
-	VerifyNonMembership  *verifyNonMembershipMsg  `json:"verify_non_membership,omitempty"`
-	CheckForMisbehaviour *checkForMisbehaviourMsg `json:"check_for_misbehaviour,omitempty"`
+type QueryMsg struct {
+	Status               *StatusMsg               `json:"status,omitempty"`
+	ExportMetadata       *ExportMetadataMsg       `json:"export_metadata,omitempty"`
+	TimestampAtHeight    *TimestampAtHeightMsg    `json:"timestamp_at_height,omitempty"`
+	VerifyClientMessage  *VerifyClientMessageMsg  `json:"verify_client_message,omitempty"`
+	CheckForMisbehaviour *CheckForMisbehaviourMsg `json:"check_for_misbehaviour,omitempty"`
 }
 
 type verifyClientMessageMsg struct {
@@ -128,7 +129,7 @@ type verifyClientMessageMsg struct {
 func (cs ClientState) VerifyClientMessage(
   ctx sdk.Context,
   _ codec.BinaryCodec,
-  clientStore sdk.KVStore,
+  clientStore storetypes.KVStore,
   clientMsg exported.ClientMessage
 ) error {
 	clientMessage, ok := clientMsg.(*ClientMessage)
@@ -136,10 +137,10 @@ func (cs ClientState) VerifyClientMessage(
 		return errorsmod.Wrapf(ibcerrors.ErrInvalidType, "expected type: %T, got: %T", &ClientMessage{}, clientMsg)
 	}
 
-	payload := queryMsg{
-		VerifyClientMessage: &verifyClientMessageMsg{ClientMessage: clientMessage},
+	payload := QueryMsg{
+		VerifyClientMessage: &VerifyClientMessageMsg{ClientMessage: clientMessage.Data},
 	}
-	_, err := wasmQuery[contractResult](ctx, clientStore, &cs, payload)
+	_, err := wasmQuery[EmptyResult](ctx, clientStore, &cs, payload)
 	return err
 }
 ```
@@ -148,13 +149,14 @@ func (cs ClientState) VerifyClientMessage(
 
 // TODO
 
+
 ### Global Wasm VM variable
 
-The 08-wasm keeper structure keeps a reference to the Wasm VM instantiated in the keeper constructor function. The keeper uses 
-the Wasm VM to store the bytecode of light client contracts. However, the Wasm VM is also needed in the 08-wasm implementations of
+The `08-wasm` keeper structure keeps a reference to the Wasm VM instantiated in the keeper constructor function. The keeper uses 
+the Wasm VM to store the bytecode of light client contracts. However, the Wasm VM is also needed in the `08-wasm` implementations of
 some of the `ClientState` interface functions to initialise a contract, execute calls on the contract and query the contract. Since
-the `ClientState` functions do not have access to the 08-wasm keeper, then it has been decided to keep a global pointer variable that
-points to the same instance as the one in the 08-wasm keeper. This global pointer variable is then used in the implementations of
+the `ClientState` functions do not have access to the `08-wasm` keeper, then it has been decided to keep a global pointer variable that
+points to the same instance as the one in the `08-wasm` keeper. This global pointer variable is then used in the implementations of
 the `ClientState` functions. 
 
 

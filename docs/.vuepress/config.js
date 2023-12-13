@@ -235,11 +235,6 @@ module.exports = {
               path: "/ibc/proto-docs.html",
             },
             {
-              title: "Capability Module",
-              directory: false,
-              path: "/ibc/capability-module.html",
-            },
-            {
               title: "Roadmap",
               directory: false,
               path: "/roadmap/roadmap.html",
@@ -496,6 +491,53 @@ module.exports = {
                 },
               ],
             },
+            {
+              title: "Wasm",
+              directory: true,
+              path: "/ibc/light-clients/wasm",
+              children: [
+                {
+                  title: "Overview",
+                  directory: false,
+                  path: "/ibc/light-clients/wasm/overview.html",
+                },
+                {
+                  title: "Concepts",
+                  directory: false,
+                  path: "/ibc/light-clients/wasm/concepts.html",
+                },
+                {
+                  title: "Integration",
+                  directory: false,
+                  path: "/ibc/light-clients/wasm/integration.html",
+                },
+                {
+                  title: "Messages",
+                  directory: false,
+                  path: "/ibc/light-clients/wasm/messages.html",
+                },
+                {
+                  title: "Deployment",
+                  directory: false,
+                  path: "/ibc/light-clients/wasm/governance.html",
+                },
+                {
+                  title: "Events",
+                  directory: false,
+                  path: "/ibc/light-clients/wasm/events.html",
+                },
+                {
+                  title: "Contracts",
+                  directory: false,
+                  path: "/ibc/light-clients/wasm/contracts.html",
+                },
+                {
+                  title: "Client",
+                  directory: false,
+                  path: "/ibc/light-clients/wasm/client.html",
+                },
+              ],
+            },
           ],
         },
         {
@@ -535,43 +577,6 @@ module.exports = {
                   title: "End Users",
                   directory: false,
                   path: "/middleware/ics29-fee/end-users.html",
-                },
-              ],
-            },
-            {
-              title: "Callbacks Middleware",
-              directory: true,
-              path: "/middleware",
-              children: [
-                {
-                  title: "Overview",
-                  directory: false,
-                  path: "/middleware/callbacks/overview.html",
-                },
-                {
-                  title: "Integration",
-                  directory: false,
-                  path: "/middleware/callbacks/integration.html",
-                },
-                {
-                  title: "Interfaces",
-                  directory: false,
-                  path: "/middleware/callbacks/interfaces.html",
-                },
-                {
-                  title: "Events",
-                  directory: false,
-                  path: "/middleware/callbacks/events.html",
-                },
-                {
-                  title: "End Users",
-                  directory: false,
-                  path: "/middleware/callbacks/end-users.html",
-                },
-                {
-                  title: "Gas Management",
-                  directory: false,
-                  path: "/middleware/callbacks/gas.html",
                 },
               ],
             },
@@ -625,11 +630,6 @@ module.exports = {
               title: "IBC-Go v7 to v7.1",
               directory: false,
               path: "/migrations/v7-to-v7_1.html",
-            },
-            {
-              title: "IBC-Go v7.2 to v7.3",
-              directory: false,
-              path: "/migrations/v7_2-to-v7_3.html",
             },
           ],
         },

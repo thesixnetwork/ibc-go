@@ -3,40 +3,41 @@ package keeper
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"cosmossdk.io/collections"
 	errorsmod "cosmossdk.io/errors"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkquery "github.com/cosmos/cosmos-sdk/types/query"
 
+	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/internal/ibcwasm"
 	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
 )
 
 var _ types.QueryServer = (*Keeper)(nil)
 
 // Code implements the Query/Code gRPC method
-func (k Keeper) Code(c context.Context, req *types.QueryCodeRequest) (*types.QueryCodeResponse, error) {
+func (k Keeper) Code(goCtx context.Context, req *types.QueryCodeRequest) (*types.QueryCodeResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	ctx := sdk.UnwrapSDKContext(c)
-	store := ctx.KVStore(k.storeKey)
-
-	codeHash, err := hex.DecodeString(req.CodeHash)
+	checksum, err := hex.DecodeString(req.Checksum)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, "invalid code hash")
+		return nil, status.Error(codes.InvalidArgument, "invalid checksum")
 	}
 
-	codeKey := types.CodeHashKey(codeHash)
-	code := store.Get(codeKey)
-	if code == nil {
-		return nil, status.Error(codes.NotFound, errorsmod.Wrap(types.ErrWasmCodeHashNotFound, req.CodeHash).Error())
+	// Only return checksums we previously stored, not arbitrary checksums that might be stored via e.g Wasmd.
+	if !types.HasChecksum(sdk.UnwrapSDKContext(goCtx), checksum) {
+		return nil, status.Error(codes.NotFound, errorsmod.Wrap(types.ErrWasmChecksumNotFound, req.Checksum).Error())
+	}
+
+	code, err := k.wasmVM.GetCode(checksum)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, errorsmod.Wrap(types.ErrWasmChecksumNotFound, req.Checksum).Error())
 	}
 
 	return &types.QueryCodeResponse{
@@ -44,26 +45,21 @@ func (k Keeper) Code(c context.Context, req *types.QueryCodeRequest) (*types.Que
 	}, nil
 }
 
-// CodeHashes implements the Query/CodeHashes gRPC method
-func (k Keeper) CodeHashes(c context.Context, req *types.QueryCodeHashesRequest) (*types.QueryCodeHashesResponse, error) {
-	var codeHashes []string
-
-	ctx := sdk.UnwrapSDKContext(c)
-	store := ctx.KVStore(k.storeKey)
-	prefixStore := prefix.NewStore(store, []byte(fmt.Sprintf("%s/", types.KeyCodeHashPrefix)))
-
-	pageRes, err := sdkquery.FilteredPaginate(prefixStore, req.Pagination, func(key []byte, _ []byte, accumulate bool) (bool, error) {
-		if accumulate {
-			codeHashes = append(codeHashes, string(key))
-		}
-		return true, nil
-	})
+// Checksums implements the Query/Checksums gRPC method. It returns a list of hex encoded checksums stored.
+func (Keeper) Checksums(goCtx context.Context, req *types.QueryChecksumsRequest) (*types.QueryChecksumsResponse, error) {
+	checksums, pageRes, err := sdkquery.CollectionPaginate(
+		goCtx,
+		ibcwasm.Checksums,
+		req.Pagination,
+		func(key []byte, value collections.NoValue) (string, error) {
+			return hex.EncodeToString(key), nil
+		})
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.QueryCodeHashesResponse{
-		CodeHashes: codeHashes,
+	return &types.QueryChecksumsResponse{
+		Checksums:  checksums,
 		Pagination: pageRes,
 	}, nil
 }

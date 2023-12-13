@@ -18,7 +18,7 @@ func GetQueryCmd() *cobra.Command {
 
 	queryCmd.AddCommand(
 		getCmdCode(),
-		getCmdCodeHashes(),
+		getCmdChecksums(),
 	)
 
 	return queryCmd
@@ -35,7 +35,7 @@ func NewTxCmd() *cobra.Command {
 	}
 
 	txCmd.AddCommand(
-		newStoreCodeCmd(),
+		newSubmitStoreCodeProposalCmd(),
 	)
 
 	return txCmd

@@ -6,22 +6,22 @@ import (
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	legacytx "github.com/cosmos/cosmos-sdk/x/auth/migrations/legacytx"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
-	ibcerrors "github.com/cosmos/ibc-go/v7/modules/core/errors"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
 )
 
-// msg types
 const (
-	TypeMsgTransfer = "transfer"
+	MaximumReceiverLength = 2048  // maximum length of the receiver address in bytes (value chosen arbitrarily)
+	MaximumMemoLength     = 32768 // maximum length of the memo in bytes (value chosen arbitrarily)
 )
 
 var (
-	_ sdk.Msg            = (*MsgUpdateParams)(nil)
-	_ sdk.Msg            = (*MsgTransfer)(nil)
-	_ legacytx.LegacyMsg = (*MsgTransfer)(nil)
+	_ sdk.Msg              = (*MsgUpdateParams)(nil)
+	_ sdk.Msg              = (*MsgTransfer)(nil)
+	_ sdk.HasValidateBasic = (*MsgUpdateParams)(nil)
+	_ sdk.HasValidateBasic = (*MsgTransfer)(nil)
 )
 
 // NewMsgUpdateParams creates a new MsgUpdateParams instance
@@ -71,16 +71,6 @@ func NewMsgTransfer(
 	}
 }
 
-// Type implements legacytx.LegacyMsg
-func (MsgTransfer) Type() string {
-	return TypeMsgTransfer
-}
-
-// Route implements legacytx.LegacyMsg
-func (MsgTransfer) Route() string {
-	return RouterKey
-}
-
 // ValidateBasic performs a basic check of the MsgTransfer fields.
 // NOTE: timeout height or timestamp values can be 0 to disable the timeout.
 // NOTE: The recipient addresses format is not validated as the format defined by
@@ -106,12 +96,13 @@ func (msg MsgTransfer) ValidateBasic() error {
 	if strings.TrimSpace(msg.Receiver) == "" {
 		return errorsmod.Wrap(ibcerrors.ErrInvalidAddress, "missing recipient address")
 	}
+	if len(msg.Receiver) > MaximumReceiverLength {
+		return errorsmod.Wrapf(ibcerrors.ErrInvalidAddress, "recipient address must not exceed %d bytes", MaximumReceiverLength)
+	}
+	if len(msg.Memo) > MaximumMemoLength {
+		return errorsmod.Wrapf(ErrInvalidMemo, "memo must not exceed %d bytes", MaximumMemoLength)
+	}
 	return ValidateIBCDenom(msg.Token.Denom)
-}
-
-// GetSignBytes implements legacytx.LegacyMsg
-func (msg MsgTransfer) GetSignBytes() []byte {
-	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(&msg))
 }
 
 // GetSigners implements sdk.Msg

@@ -1,10 +1,12 @@
+//go:build !test_e2e
+
 package transfer
 
 import (
 	"context"
 	"testing"
 
-	test "github.com/strangelove-ventures/interchaintest/v7/testutil"
+	test "github.com/strangelove-ventures/interchaintest/v8/testutil"
 	testifysuite "github.com/stretchr/testify/suite"
 
 	sdkmath "cosmossdk.io/math"
@@ -17,8 +19,8 @@ import (
 
 	"github.com/cosmos/ibc-go/e2e/testsuite"
 	"github.com/cosmos/ibc-go/e2e/testvalues"
-	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	ibcerrors "github.com/cosmos/ibc-go/v7/modules/core/errors"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	ibcerrors "github.com/cosmos/ibc-go/v8/modules/core/errors"
 )
 
 func TestAuthzTransferTestSuite(t *testing.T) {
@@ -136,7 +138,8 @@ func (suite *AuthzTransferTestSuite) TestAuthz_MsgTransfer_Succeeds() {
 
 	t.Run("verify receiver wallet amount", func(t *testing.T) {
 		chainBIBCToken := testsuite.GetIBCToken(chainADenom, channelA.Counterparty.PortID, channelA.Counterparty.ChannelID)
-		actualBalance, err := chainB.GetBalance(ctx, receiverWalletAddress, chainBIBCToken.IBCDenom())
+		actualBalance, err := suite.QueryBalance(ctx, chainB, receiverWalletAddress, chainBIBCToken.IBCDenom())
+
 		suite.Require().NoError(err)
 		suite.Require().Equal(testvalues.IBCTransferAmount, actualBalance.Int64())
 	})
@@ -272,7 +275,8 @@ func (suite *AuthzTransferTestSuite) TestAuthz_InvalidTransferAuthorizations() {
 
 		t.Run("verify receiver wallet amount", func(t *testing.T) {
 			chainBIBCToken := testsuite.GetIBCToken(chainADenom, channelA.Counterparty.PortID, channelA.Counterparty.ChannelID)
-			actualBalance, err := chainB.GetBalance(ctx, receiverWalletAddress, chainBIBCToken.IBCDenom())
+			actualBalance, err := suite.QueryBalance(ctx, chainB, receiverWalletAddress, chainBIBCToken.IBCDenom())
+
 			suite.Require().NoError(err)
 			suite.Require().Equal(int64(0), actualBalance.Int64())
 		})

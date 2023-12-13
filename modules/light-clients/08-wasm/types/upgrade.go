@@ -2,13 +2,13 @@ package types
 
 import (
 	errorsmod "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	ibcerrors "github.com/cosmos/ibc-go/v7/modules/core/errors"
-	"github.com/cosmos/ibc-go/v7/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 // VerifyUpgradeAndUpdateState, on a successful verification expects the contract to update
@@ -16,7 +16,7 @@ import (
 func (cs ClientState) VerifyUpgradeAndUpdateState(
 	ctx sdk.Context,
 	cdc codec.BinaryCodec,
-	clientStore sdk.KVStore,
+	clientStore storetypes.KVStore,
 	upgradedClient exported.ClientState,
 	upgradedConsState exported.ConsensusState,
 	proofUpgradeClient,
@@ -34,23 +34,15 @@ func (cs ClientState) VerifyUpgradeAndUpdateState(
 			&ConsensusState{}, wasmUpgradeConsState)
 	}
 
-	// last height of current counterparty chain must be client's latest height
-	lastHeight := cs.GetLatestHeight()
-
-	if !upgradedClient.GetLatestHeight().GT(lastHeight) {
-		return errorsmod.Wrapf(ibcerrors.ErrInvalidHeight, "upgraded client height %s must be greater than current client height %s",
-			upgradedClient.GetLatestHeight(), lastHeight)
-	}
-
-	payload := sudoMsg{
-		VerifyUpgradeAndUpdateState: &verifyUpgradeAndUpdateStateMsg{
-			UpgradeClientState:         upgradedClient,
-			UpgradeConsensusState:      upgradedConsState,
+	payload := SudoMsg{
+		VerifyUpgradeAndUpdateState: &VerifyUpgradeAndUpdateStateMsg{
+			UpgradeClientState:         *wasmUpgradeClientState,
+			UpgradeConsensusState:      *wasmUpgradeConsState,
 			ProofUpgradeClient:         proofUpgradeClient,
 			ProofUpgradeConsensusState: proofUpgradeConsState,
 		},
 	}
 
-	_, err := wasmCall[contractResult](ctx, clientStore, &cs, payload)
+	_, err := wasmSudo[EmptyResult](ctx, cdc, clientStore, &cs, payload)
 	return err
 }

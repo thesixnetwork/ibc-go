@@ -11,8 +11,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	"github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	"github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 )
 
 var (
@@ -79,12 +79,14 @@ func (suite *TypesTestSuite) TestValidateAccountAddress() {
 		},
 		{
 			"address is too long",
-			ibctesting.LongString,
+			ibctesting.GenerateString(uint(types.DefaultMaxAddrLength) + 1),
 			false,
 		},
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		suite.Run(tc.name, func() {
 			err := types.ValidateAccountAddress(tc.address)
 
@@ -135,6 +137,8 @@ func (suite *TypesTestSuite) TestGenesisAccountValidate() {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
+
 		err := tc.acc.Validate()
 
 		if tc.expPass {
