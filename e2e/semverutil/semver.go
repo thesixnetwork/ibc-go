@@ -29,6 +29,10 @@ func (fr FeatureReleases) IsSupported(versionStr string) bool {
 		versionStr = strings.ReplaceAll(versionStr, "x", "999")
 	}
 
+	if strings.Contains(versionStr, "wasm") {
+		versionStr = extractIbcGoVersionFromWasmString(versionStr)
+	}
+
 	// assume any non-semantic version formatted version supports the feature
 	// this will be useful during development of the e2e test with the new feature
 	if !semver.IsValid(versionStr) {
@@ -58,4 +62,12 @@ func GTE(versionA, versionB string) bool {
 // semverEqual returns true if versionA is equal to versionB.
 func semverEqual(versionA, versionB string) bool {
 	return semver.Compare(versionA, versionB) == 0
+}
+
+// extractIbcGoVersionFromWasmString extracts the ibc-go version from the wasm version string.
+// the expected format may look like:
+// "ghcr.io/cosmos/ibc-go-wasm-simd:v0.1.0-pre-rc+ibc-go-v7.3"
+func extractIbcGoVersionFromWasmString(wasmVersion string) string {
+	ibcGoVersionIndex := strings.Index(wasmVersion, "-ibc-go-")
+	return wasmVersion[ibcGoVersionIndex+len("-ibc-go-"):] + ".0"
 }
