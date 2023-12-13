@@ -22,7 +22,7 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 
-	tmjson "github.com/cometbft/cometbft/libs/json"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
 
 	"github.com/cosmos/ibc-go/e2e/relayer"
 	"github.com/cosmos/ibc-go/e2e/semverutil"
@@ -56,7 +56,7 @@ const (
 	defaultRlyTag = "latest"
 
 	// TODO: https://github.com/cosmos/ibc-go/issues/4965
-	defaultHyperspaceTag = "local"
+	defaultHyperspaceTag = "timeout"
 	// defaultHermesTag is the tag that will be used if no relayer tag is specified for hermes.
 	defaultHermesTag = "v1.7.0"
 	// defaultChainTag is the tag that will be used for the chains if none is specified.
@@ -445,6 +445,11 @@ func IsCI() bool {
 	return strings.ToLower(os.Getenv("CI")) == "true"
 }
 
+// IsFork returns true if the tests are running in fork mode, false is returned otherwise.
+func IsFork() bool {
+	return strings.ToLower(os.Getenv("FORK")) == "true"
+}
+
 // ChainOptions stores chain configurations for the chains that will be
 // created for the tests. They can be modified by passing ChainOptionConfiguration
 // to E2ETestSuite.GetChains.
@@ -560,7 +565,7 @@ func defaultGovv1ModifyGenesis(version string) func(ibc.ChainConfig, []byte) ([]
 		// in older version < v8, tmjson marshal must be used.
 		// regular json marshalling must be used for v8 and above as the
 		// sdk is de-coupled from comet.
-		marshalIndentFn := tmjson.MarshalIndent
+		marshalIndentFn := cmtjson.MarshalIndent
 		if stdlibJSONMarshalling.IsSupported(version) {
 			marshalIndentFn = json.MarshalIndent
 		}

@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -190,7 +189,7 @@ func (suite *KeeperTestSuite) TestUpdateClientTendermint() {
 			suite.chainA.App.GetIBCKeeper().ClientKeeper.SetClientConsensusState(suite.chainA.GetContext(), clientID, height1, prevConsState)
 
 			height5 := clienttypes.NewHeight(1, 5)
-			// store next consensus state to check that trustedHeight does not need to be hightest consensus state before header height
+			// store next consensus state to check that trustedHeight does not need to be highest consensus state before header height
 			nextConsState := &ibctm.ConsensusState{
 				Timestamp:          suite.past.Add(time.Minute),
 				NextValidatorsHash: suite.chainB.Vals.Hash(),
@@ -520,22 +519,6 @@ func (suite *KeeperTestSuite) TestUpdateClientEventEmission() {
 	// first event type is "message", followed by 3 "tx" events in ante
 	updateEvent := result.Events[4]
 	suite.Require().Equal(clienttypes.EventTypeUpdateClient, updateEvent.Type)
-
-	// use a boolean to ensure the update event contains the header
-	contains := false
-	for _, attr := range updateEvent.Attributes {
-		if attr.Key == clienttypes.AttributeKeyHeader {
-			contains = true
-
-			bz, err := hex.DecodeString(attr.Value)
-			suite.Require().NoError(err)
-
-			emittedHeader, err := clienttypes.UnmarshalClientMessage(suite.chainA.App.AppCodec(), bz)
-			suite.Require().NoError(err)
-			suite.Require().Equal(header, emittedHeader)
-		}
-	}
-	suite.Require().True(contains)
 }
 
 func (suite *KeeperTestSuite) TestRecoverClient() {

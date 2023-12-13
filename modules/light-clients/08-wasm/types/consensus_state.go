@@ -9,7 +9,7 @@ import (
 var _ exported.ConsensusState = (*ConsensusState)(nil)
 
 // NewConsensusState creates a new ConsensusState instance.
-func NewConsensusState(data []byte, timestamp uint64) *ConsensusState {
+func NewConsensusState(data []byte) *ConsensusState {
 	return &ConsensusState{
 		Data: data,
 	}
@@ -17,7 +17,7 @@ func NewConsensusState(data []byte, timestamp uint64) *ConsensusState {
 
 // ClientType returns Wasm type.
 func (ConsensusState) ClientType() string {
-	return exported.Wasm
+	return Wasm
 }
 
 // GetTimestamp returns block time in nanoseconds of the header that created consensus state.

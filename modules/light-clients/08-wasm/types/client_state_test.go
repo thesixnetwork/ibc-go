@@ -1,7 +1,6 @@
 package types_test
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"time"
 
@@ -258,8 +257,15 @@ func (suite *TypesTestSuite) TestInitialize() {
 
 					suite.Require().Equal(env.Contract.Address, defaultWasmClientID)
 
-					store.Set(host.ClientStateKey(), clienttypes.MustMarshalClientState(suite.chainA.App.AppCodec(), payload.ClientState))
-					store.Set(host.ConsensusStateKey(payload.ClientState.LatestHeight), clienttypes.MustMarshalConsensusState(suite.chainA.App.AppCodec(), payload.ConsensusState))
+					wrappedClientState := clienttypes.MustUnmarshalClientState(suite.chainA.App.AppCodec(), payload.ClientState)
+
+					clientState := types.NewClientState(payload.ClientState, payload.Checksum, wrappedClientState.GetLatestHeight().(clienttypes.Height))
+					clientStateBz := clienttypes.MustMarshalClientState(suite.chainA.App.AppCodec(), clientState)
+					store.Set(host.ClientStateKey(), clientStateBz)
+
+					consensusState := types.NewConsensusState(payload.ConsensusState)
+					consensusStateBz := clienttypes.MustMarshalConsensusState(suite.chainA.App.AppCodec(), consensusState)
+					store.Set(host.ConsensusStateKey(clientState.GetLatestHeight()), consensusStateBz)
 
 					resp, err := json.Marshal(types.EmptyResult{})
 					suite.Require().NoError(err)
@@ -306,9 +312,10 @@ func (suite *TypesTestSuite) TestInitialize() {
 		suite.Run(tc.name, func() {
 			suite.SetupWasmWithMockVM()
 
-			checksum := sha256.Sum256(wasmtesting.Code)
-			clientState = types.NewClientState([]byte{1}, checksum[:], clienttypes.NewHeight(0, 1))
-			consensusState = types.NewConsensusState([]byte{2}, 0)
+			wrappedClientStateBz := clienttypes.MustMarshalClientState(suite.chainA.App.AppCodec(), wasmtesting.MockTendermitClientState)
+			wrappedClientConsensusStateBz := clienttypes.MustMarshalConsensusState(suite.chainA.App.AppCodec(), wasmtesting.MockTendermintClientConsensusState)
+			clientState = types.NewClientState(wrappedClientStateBz, suite.checksum, wasmtesting.MockTendermitClientState.GetLatestHeight().(clienttypes.Height))
+			consensusState = types.NewConsensusState(wrappedClientConsensusStateBz)
 
 			clientID := suite.chainA.App.GetIBCKeeper().ClientKeeper.GenerateClientIdentifier(suite.chainA.GetContext(), clientState.ClientType())
 			clientStore = suite.chainA.App.GetIBCKeeper().ClientKeeper.ClientStore(suite.chainA.GetContext(), clientID)

@@ -1,8 +1,6 @@
 package testing
 
 import (
-	"crypto/sha256"
-
 	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/ibc-go/modules/light-clients/08-wasm/types"
@@ -28,9 +26,14 @@ func NewWasmEndpoint(chain *ibctesting.TestChain) *WasmEndpoint {
 // The client and consensus states are represented by byte slices
 // and the starting height is 1.
 func (endpoint *WasmEndpoint) CreateClient() error {
-	checksum := sha256.Sum256(Code)
-	clientState := types.NewClientState(contractClientState, checksum[:], clienttypes.NewHeight(0, 1))
-	consensusState := types.NewConsensusState(contractConsensusState, 0)
+	checksum, err := types.CreateChecksum(Code)
+	require.NoError(endpoint.Chain.TB, err)
+
+	wrappedClientStateBz := clienttypes.MustMarshalClientState(endpoint.Chain.App.AppCodec(), CreateMockTendermintClientState(clienttypes.NewHeight(1, 5)))
+	wrappedClientConsensusStateBz := clienttypes.MustMarshalConsensusState(endpoint.Chain.App.AppCodec(), MockTendermintClientConsensusState)
+
+	clientState := types.NewClientState(wrappedClientStateBz, checksum, clienttypes.NewHeight(0, 1))
+	consensusState := types.NewConsensusState(wrappedClientConsensusStateBz)
 
 	msg, err := clienttypes.NewMsgCreateClient(
 		clientState, consensusState, endpoint.Chain.SenderAccount.GetAddress().String(),
@@ -46,4 +49,13 @@ func (endpoint *WasmEndpoint) CreateClient() error {
 	require.NoError(endpoint.Chain.TB, err)
 
 	return nil
+}
+
+// AllowWasmClients adds 08-wasm to the list of allowed clients
+func AllowWasmClients(chain *ibctesting.TestChain) {
+	ctx := chain.GetContext()
+	clientKeeper := chain.App.GetIBCKeeper().ClientKeeper
+	params := clientKeeper.GetParams(ctx)
+	params.AllowedClients = append(params.AllowedClients, types.Wasm)
+	clientKeeper.SetParams(ctx, params)
 }

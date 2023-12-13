@@ -5887,7 +5887,7 @@ paths:
           format: uint64
         - name: latest_height
           description: >-
-            latest_height overrrides the height field and queries the latest
+            latest_height overrides the height field and queries the latest
             stored
 
             ConsensusState.
@@ -7189,7 +7189,7 @@ paths:
                               identifier
                         description: >-
                           Version defines the versioning scheme used to
-                          negotiate the IBC verison in
+                          negotiate the IBC version in
 
                           the connection handshake.
                       title: >-
@@ -7598,7 +7598,7 @@ paths:
                             identifier
                       description: >-
                         Version defines the versioning scheme used to negotiate
-                        the IBC verison in
+                        the IBC version in
 
                         the connection handshake.
                     description: >-
@@ -13663,22 +13663,25 @@ paths:
           type: boolean
       tags:
         - Query
-  /ibc/lightclients/wasm/v1/code_hashes:
+  /ibc/lightclients/wasm/v1/checksums:
     get:
-      summary: Get all Wasm code hashes
-      operationId: CodeHashes
+      summary: Get all Wasm checksums
+      operationId: Checksums
       responses:
         '200':
           description: A successful response.
           schema:
             type: object
             properties:
-              code_hashes:
+              checksums:
                 type: array
                 items:
                   type: string
+                description: >-
+                  checksums is a list of the hex encoded checksums of all wasm
+                  codes stored.
               pagination:
-                description: pagination defines an optional pagination for the request.
+                description: pagination defines the pagination in the response.
                 type: object
                 properties:
                   next_key:
@@ -13697,8 +13700,8 @@ paths:
 
                       was set, its value is undefined otherwise
             description: >-
-              QueryCodeHashesResponse is the response type for the
-              Query/CodeHashes RPC method.
+              QueryChecksumsResponse is the response type for the
+              Query/Checksums RPC method.
         default:
           description: An unexpected error response.
           schema:
@@ -13780,9 +13783,9 @@ paths:
           type: boolean
       tags:
         - Query
-  /ibc/lightclients/wasm/v1/code_hashes/{code_hash}/code:
+  /ibc/lightclients/wasm/v1/checksums/{checksum}/code:
     get:
-      summary: Get Wasm code for given code hash
+      summary: Get Wasm code for given checksum
       operationId: Code
       responses:
         '200':
@@ -13819,7 +13822,8 @@ paths:
                       type: string
                       format: byte
       parameters:
-        - name: code_hash
+        - name: checksum
+          description: checksum is a hex encoded string of the code stored.
           in: path
           required: true
           type: string
@@ -15234,7 +15238,7 @@ definitions:
         format: uint64
         title: packet sequence
     title: |-
-      PacketId is an identifer for a unique Packet
+      PacketId is an identifier for a unique Packet
       Source chains refer to packets by source port/channel
       Destination chains refer to packets by destination port/channel
   ibc.core.client.v1.ConsensusStateWithHeight:
@@ -17024,7 +17028,7 @@ definitions:
               title: list of features compatible with the specified identifier
           description: >-
             Version defines the versioning scheme used to negotiate the IBC
-            verison in
+            version in
 
             the connection handshake.
         description: >-
@@ -17146,7 +17150,7 @@ definitions:
               title: list of features compatible with the specified identifier
           description: >-
             Version defines the versioning scheme used to negotiate the IBC
-            verison in
+            version in
 
             the connection handshake.
         title: >-
@@ -17731,7 +17735,7 @@ definitions:
                   title: list of features compatible with the specified identifier
               description: >-
                 Version defines the versioning scheme used to negotiate the IBC
-                verison in
+                version in
 
                 the connection handshake.
             description: >-
@@ -17868,7 +17872,7 @@ definitions:
                     title: list of features compatible with the specified identifier
                 description: >-
                   Version defines the versioning scheme used to negotiate the
-                  IBC verison in
+                  IBC version in
 
                   the connection handshake.
               title: >-
@@ -18014,7 +18018,7 @@ definitions:
           type: string
         title: list of features compatible with the specified identifier
     description: |-
-      Version defines the versioning scheme used to negotiate the IBC verison in
+      Version defines the versioning scheme used to negotiate the IBC version in
       the connection handshake.
   ibc.core.channel.v1.Channel:
     type: object
@@ -19498,15 +19502,18 @@ definitions:
       ready to send and receive packets.
        - STATE_CLOSED: A channel has been closed and can no longer be used to send or receive
       packets.
-  ibc.lightclients.wasm.v1.QueryCodeHashesResponse:
+  ibc.lightclients.wasm.v1.QueryChecksumsResponse:
     type: object
     properties:
-      code_hashes:
+      checksums:
         type: array
         items:
           type: string
+        description: >-
+          checksums is a list of the hex encoded checksums of all wasm codes
+          stored.
       pagination:
-        description: pagination defines an optional pagination for the request.
+        description: pagination defines the pagination in the response.
         type: object
         properties:
           next_key:
@@ -19525,7 +19532,7 @@ definitions:
 
               was set, its value is undefined otherwise
     description: >-
-      QueryCodeHashesResponse is the response type for the Query/CodeHashes RPC
+      QueryChecksumsResponse is the response type for the Query/Checksums RPC
       method.
   ibc.lightclients.wasm.v1.QueryCodeResponse:
     type: object

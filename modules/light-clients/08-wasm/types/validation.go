@@ -7,7 +7,6 @@ import (
 
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 const maxWasmSize = 3 * 1024 * 1024
@@ -31,7 +30,7 @@ func MaxWasmByteSize() uint64 {
 }
 
 // ValidateWasmChecksum validates that the checksum is of the correct length
-func ValidateWasmChecksum(checksum []byte) error {
+func ValidateWasmChecksum(checksum Checksum) error {
 	lenChecksum := len(checksum)
 	if lenChecksum == 0 {
 		return errorsmod.Wrap(ErrInvalidChecksum, "checksum cannot be empty")
@@ -50,8 +49,8 @@ func ValidateClientID(clientID string) error {
 		return errorsmod.Wrapf(host.ErrInvalidID, "invalid client identifier %s", clientID)
 	}
 
-	if !strings.HasPrefix(clientID, exported.Wasm) {
-		return errorsmod.Wrapf(host.ErrInvalidID, "client identifier %s does not contain %s prefix", clientID, exported.Wasm)
+	if !strings.HasPrefix(clientID, Wasm) {
+		return errorsmod.Wrapf(host.ErrInvalidID, "client identifier %s does not contain %s prefix", clientID, Wasm)
 	}
 
 	return nil
